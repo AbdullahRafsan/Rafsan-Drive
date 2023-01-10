@@ -22,11 +22,24 @@ app.listen(port,()=>{
 function ls(cwd){
     let file_list = []
     pwd = cwd
-    if(cwd === home) {
+    if(cwd !== home) {
         const back = cwd.split('/')
         back.pop()
         const file_name = ".."
         const file_path = "/dir:"+back.join("/")
+        file_list.push( {file_name,file_path} )
+    }
+    if(os.platform() === 'darwin') {
+        let file_name = "All Drives"
+        let file_path = "/dir:/Volumes"
+        file_list.push( {file_name,file_path} )
+        file_name = "Home"
+        file_path = "/dir:"+home
+        file_list.push( {file_name,file_path} )
+    }
+    if(os.platform() === 'linux') {
+        const file_name = "All_Drives"
+        const file_path = "/dir:"+home
         file_list.push( {file_name,file_path} )
     }
     fs.readdirSync(cwd).forEach(
@@ -68,7 +81,7 @@ app.get('/',(req,res)=>{
             </form>
         </div>
         `+(
-            f_list.map((item)=>{
+            f_list.map((item,index)=>{
                 return `<div>
                 <a class="link" href="${item.file_path}">${item.file_name}</a>
                 <br />
@@ -105,7 +118,8 @@ app.post('/upload',prepmid,upload.array("file"),(req,res)=>{
 
 // File open action
 app.get('/file:*',(req,res)=>{
-    const file = req.url.split(':').pop()
+    const u = decodeURIComponent(req.url)
+    const file = u.split(':').pop()
     try {
         res.sendFile(file)
     }
@@ -116,7 +130,9 @@ app.get('/file:*',(req,res)=>{
 
 // Folder open action
 app.get('/dir:*',(req,res)=>{
-    const folder = req.url.split(':').pop()
+    const u = decodeURIComponent(req.url)
+    const folder = u.split(':').pop()
+    if(folder === home) res.redirect('/')
     const f_list = ls( folder )
     
     res.send(`<html>
